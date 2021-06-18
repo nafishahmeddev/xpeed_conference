@@ -11,7 +11,7 @@ function App() {
     var cl_vdo_ref = useRef(null);
 
     var my_stream = null;
-    //const [cl_stream,  setClStream] = useState(null);
+    var cl_stream = null;
 
 
     const callClient = (id)=>{
@@ -20,14 +20,14 @@ function App() {
         });
     }
     peer.on('call', (call) => {
-        navigator.mediaDevices.getUserMedia({video: true, audio: true}, (stream) => {
-            call.answer(stream); // Answer the call with an A/V stream.
+            call.answer(my_stream); // Answer the call with an A/V stream.
             call.on('stream', (remoteStream) => {
                 // Show stream in some <video> element.
+                cl_stream = remoteStream;
+                cl_vdo_ref.current.srcObject = remoteStream;
+                cl_vdo_ref.current.play();
             });
-        }, (err) => {
-            console.error('Failed to get local stream', err);
-        });
+
     });
 
 
@@ -36,11 +36,8 @@ function App() {
         navigator.mediaDevices.getUserMedia({video: true, audio: false})
             .then(stream => {
                 my_stream = stream;
-
                 my_vdo_ref.current.srcObject = stream;
-                cl_vdo_ref.current.srcObject = stream;
                 my_vdo_ref.current.play();
-                cl_vdo_ref.current.play();
             })
             .catch(function (error) {
                 console.log(error);
