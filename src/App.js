@@ -33,7 +33,7 @@ function App() {
 
 
     useEffect(function (){
-
+        navigator.getUserMedia = (navigator.mediaDevices.getUserMedia|| navigator.getUserMedia);
         navigator.getUserMedia({video: true, audio: false})
             .then(stream => {
                 my_stream = stream;
