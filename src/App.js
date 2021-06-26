@@ -33,16 +33,34 @@ function App() {
 
 
     useEffect(function (){
-        navigator.getUserMedia = (navigator.mediaDevices.getUserMedia|| navigator.getUserMedia);
-        navigator.getUserMedia({video: true, audio: false})
-            .then(stream => {
-                my_stream = stream;
-                my_vdo_ref.current.srcObject = stream;
-                my_vdo_ref.current.play();
-            })
-            .catch(function (error) {
-                console.log(error);
-            });
+        navigator.getUserMedia = (
+            navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            navigator.msGetUserMedia
+        );
+        if (typeof navigator.mediaDevices.getUserMedia === 'undefined') {
+
+            navigator.getUserMedia({video: true, audio: false})
+                .then(stream => {
+                    my_stream = stream;
+                    my_vdo_ref.current.srcObject = stream;
+                    my_vdo_ref.current.play();
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        } else {
+            navigator.mediaDevices.getUserMedia({video: true, audio: false})
+                .then(stream => {
+                    my_stream = stream;
+                    my_vdo_ref.current.srcObject = stream;
+                    my_vdo_ref.current.play();
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        }
     },[]);
     return (
         <div className="App">
