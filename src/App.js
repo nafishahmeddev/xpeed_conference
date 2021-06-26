@@ -33,7 +33,8 @@ function App() {
 
 
     useEffect(function (){
-        navigator.mediaDevices.getUserMedia({video: true, audio: false})
+
+        navigator.getUserMedia({video: true, audio: false})
             .then(stream => {
                 my_stream = stream;
                 my_vdo_ref.current.srcObject = stream;
@@ -42,8 +43,6 @@ function App() {
             .catch(function (error) {
                 console.log(error);
             });
-
-
     },[]);
     return (
         <div className="App">
