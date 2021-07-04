@@ -66,7 +66,7 @@ function App() {
                 }
             }
 
-            navigator.mediaDevices.getUserMedia({video: true, audio: false})
+            navigator.mediaDevices.getUserMedia({video: true, audio: true})
                 .then(stream => {
                     setMyStream(stream);
                 })
