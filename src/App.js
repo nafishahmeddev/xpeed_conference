@@ -145,6 +145,7 @@ function App() {
 
             my_vdo_ref.current.srcObject = my_stream;
             my_vdo_ref.current.play();
+            my_vdo_ref.current.volume = 0;
         }
     },[cl_stream])
 
