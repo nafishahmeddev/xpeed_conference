@@ -2,12 +2,14 @@ import {useEffect, useRef, useState} from 'react';
 import Tools from "./utils/Tools";
 import Peer from 'peerjs';
 import './App.css';
+import ChatBubble from "./components/chat_bubble";
 
 function App() {
     const my_id = localStorage.getItem("my_id")!=null?localStorage.getItem("my_id"):Tools.makeid(16);
     localStorage.setItem("my_id", my_id);
     var my_vdo_ref = useRef(null);
     var cl_vdo_ref = useRef(null);
+    var msgs_ref = useRef(null);
 
 
     const [my_stream, setMyStream] = useState(null);
@@ -21,6 +23,8 @@ function App() {
     const [send_call, setSendCall] = useState(null);
     const [recv_call, setRecvCall] = useState(null);
 
+    const [messages, setMessages] = useState([]);
+
 
     const connectClient = () =>{
         setClientPeer(peer.connect(cl_id));
@@ -33,7 +37,7 @@ function App() {
 
 
 
-    useEffect(function (){
+    useEffect(()=>{
         if (isLoading) {
             setPeer(new Peer(my_id));
             // Older browsers might not implement mediaDevices at all, so we set an empty object first
@@ -76,20 +80,19 @@ function App() {
     },[isLoading]);
 
     useEffect(()=>{
-        if (!peer){return}
-        peer.on('connection', function(conn) {
-            setConnected(true);
-            set_cl_id(conn.peer);
-            callClient();
-            conn.on('data', function(data){
-                // Will print 'hi!'
-                console.log(data);
-            });
-        });
+        if(peer) {
+            peer.on('connection', function (conn) {
+                setConnected(true);
+                set_cl_id(conn.peer);
+                setClientPeer(conn);
+                callClient();
 
-        peer.on('call', (call) => {
-            setRecvCall(call);
-        });
+            });
+
+            peer.on('call', (call) => {
+                setRecvCall(call);
+            });
+        }
 
     }, [peer])
 
@@ -99,11 +102,10 @@ function App() {
                 setConnected(true);
                 // Receive messages
                 client_peer.on('data', function (data) {
-                    console.log('Received', data);
+                    if (typeof data == "object"){
+                        updateMessages(data);
+                    }
                 });
-
-                // Send messages
-                client_peer.send('Hello!');
             });
         }
     }, [client_peer])
@@ -116,6 +118,7 @@ function App() {
             });
         }
     },[send_call])
+
     useEffect(()=>{
         console.log(send_call);
         if (recv_call) {
@@ -128,14 +131,14 @@ function App() {
     },[recv_call])
 
     useEffect(()=>{
-        if(my_vdo_ref.current!=null && my_stream!=null) {
+        if(my_vdo_ref.current!=null && my_stream) {
             my_vdo_ref.current.srcObject = my_stream;
             my_vdo_ref.current.play();
         }
-    }, [my_stream])
+    },[my_stream])
 
     useEffect(()=>{
-        if(cl_vdo_ref.current!=null && cl_stream!=null) {
+        if(cl_vdo_ref.current!=null && cl_stream) {
             cl_vdo_ref.current.srcObject = cl_stream;
             cl_vdo_ref.current.play();
 
@@ -143,13 +146,30 @@ function App() {
             my_vdo_ref.current.srcObject = my_stream;
             my_vdo_ref.current.play();
         }
-    }, [cl_stream])
+    },[cl_stream])
+
+    useEffect(()=>{
+        if (msgs_ref.current!=null){
+            msgs_ref.current.scrollTop = msgs_ref.current.scrollHeight;
+        }
+    }, [messages]);
 
 
+    const updateMessages = (message)=>{
+        setMessages(messages => [...messages, message]);
+    }
+    const sendMessage=(message)=>{
+        const msg = {
+            type : 'text',
+            text : message,
+            timestamp: Date.now(),
+            _peer: my_id
+        }
+        updateMessages(msg);
+        client_peer.send(msg);
+    }
     return (
         <div className="App">
-
-
 
             {
                 !isConnected?(
@@ -174,18 +194,35 @@ function App() {
                         </div>
                     </div>
                 ):(
-                    <div>
-                        <div>
+                    <div style={{height: '100%', display: 'flex'}}>
+                        <div className="uk-position-relative" style={{flex:1}}>
                             <video ref={cl_vdo_ref} className="uk-position-absolute uk-position-top-left uk-height-1-1 uk-width-1-1"/>
                             <video ref={my_vdo_ref}  className="uk-position-absolute uk-position-small uk-position-top-left uk-border-rounded"
                                    style={{objectFit:'cover',  width: 120, objectPosition:'center'}}/>
-                            <span className="uk-position-absolute uk-position-bottom-right uk-padding-small uk-light uk-text-small">
-                       Connected PEER : {cl_id}
-                   </span>
+                            <span className="uk-position-absolute uk-position-bottom-left uk-padding-small uk-light uk-text-small">Connected PEER : {cl_id}</span>
 
                         </div>
-                        <div>
-                            <img/>
+                        <div style={{backgroundColor:'white', minWidth:350, display:'flex', flexDirection:'column'}}>
+                            <div ref={msgs_ref}  className="uk-padding-small uk-overflow-auto uk-background-muted" style={{flex:1, backgroundImage:'url(https://www.transparenttextures.com/patterns/bright-squares.png)'}}>
+                                {
+                                    messages.map(message=>{
+                                        return(
+                                            <ChatBubble key={message.timestamp} ob={message}/>
+                                        )
+                                    })
+                                }
+                            </div>
+                            <form onSubmit={(event)=>{
+                                event.preventDefault();
+                                let message = event.target.querySelector("#message").value;
+                                if (message===""){return}
+                                sendMessage(message);
+                                event.target.querySelector("#message").value = "";
+                            }}
+                                  className="uk-padding-small" style={{borderTop:'1px solid rgba(0,0,0,0.06)'}}>
+                                <button onClick={()=>{callClient();}}>Call</button>
+                                <input className="uk-input uk-border-pill uk-form-small uk-width-expand" id="message" placeholder="Message" />
+                            </form>
                         </div>
                     </div>
                 )
@@ -198,3 +235,4 @@ function App() {
 }
 
 export default App;
+
